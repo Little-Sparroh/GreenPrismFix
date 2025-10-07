@@ -7,20 +7,22 @@ using System.Reflection;
 
 namespace MycopunkModTemplate;
 
-[BepInPlugin("yourname.mycopunk.greenprismfix", "GreenPrismFix", "1.0.0")]
+[BepInPlugin(PluginGUID, PluginName, PluginVersion)]
 public class Plugin : BaseUnityPlugin
 {
+    public const string PluginGUID = "sparroh.greenprismfix";
+    public const string PluginName = "GreenPrismFix";
+    public const string PluginVersion = "1.0.1";
+
     internal new static ManualLogSource Logger;
 
     private void Awake()
     {
-        // Initialize Harmony
-        var harmony = new Harmony("yourname.mycopunk.greenprismfix");
+        var harmony = new Harmony(PluginGUID);
         harmony.PatchAll();
 
-        // Plugin startup logic
         Logger = base.Logger;
-        Logger.LogInfo($"Plugin {harmony.Id} is loaded!");
+        Logger.LogInfo($"{PluginName} loaded successfully.");
     }
 }
 
@@ -41,13 +43,11 @@ public class MiniCannonPrismPatch
         MiniCannon miniCannon = gear as MiniCannon;
         if (miniCannon == null)
         {
-            //Logger.LogError("Failed to cast IGear to MiniCannon");
-            return true; // Run original method if cast fails
+            return true;
         }
 
         Rarity rarity = (Rarity)AccessTools.Field(typeof(UpgradeProperty_MiniCannon_Prism), "rarity").GetValue(__instance);
 
-        // Replicate original logic
         int connectedPrismCountRecursive = (int)AccessTools.Method(
             typeof(UpgradeProperty_MiniCannon_Prism),
             "GetConnectedPrismCountRecursive",
@@ -56,7 +56,6 @@ public class MiniCannonPrismPatch
         float num;
         try
         {
-            // Try upgrade.GetValue first
             num = (float)AccessTools.Method(
                 upgrade.GetType(),
                 "GetValue",
@@ -65,7 +64,6 @@ public class MiniCannonPrismPatch
         }
         catch
         {
-            // Fallback to value.GetValue
             object value = AccessTools.Field(typeof(UpgradeProperty_MiniCannon_Prism), "value").GetValue(__instance);
             num = (float)AccessTools.Method(
                 value.GetType(),
@@ -74,16 +72,12 @@ public class MiniCannonPrismPatch
             ).Invoke(value, new object[] { rand });
         }
 
-        // Log original values
-        //Logger.LogInfo($"Before modification: damage = {miniCannon.GunData.damage}, maxDamageRange = {miniCannon.GunData.rangeData.maxDamageRange}, connectedPrismCountRecursive = {connectedPrismCountRecursive}, num = {num}");
-
         float multiplier = 1f + (float)connectedPrismCountRecursive * num;
 
-        // Replicate original Apply method logic for all rarities
         switch (rarity)
         {
             case Rarity.Standard:
-                miniCannon.GunData.rangeData.maxDamageRange *= multiplier; // Modified to range instead of damage
+                miniCannon.GunData.rangeData.maxDamageRange *= multiplier;
                 break;
             case Rarity.Rare:
                 miniCannon.GunData.spreadData.spreadSize *= multiplier;
@@ -96,9 +90,6 @@ public class MiniCannonPrismPatch
                 break;
         }
 
-        // Log modified values
-        //Logger.LogInfo($"After modification: damage = {miniCannon.GunData.damage}, maxDamageRange = {miniCannon.GunData.rangeData.maxDamageRange}, multiplier = {multiplier}");
-
-        return false; // Skip original method to prevent damage modification
+        return false;
     }
 }
